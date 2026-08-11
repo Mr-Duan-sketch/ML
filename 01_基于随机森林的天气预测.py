@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.tree import export_graphviz
+import pydot
 
 # 读取数据
 features = pd.read_csv('data/temps.csv')
@@ -64,3 +66,36 @@ predictions = estimator.predict(test_features)
 mse = np.mean((predictions - test_labels)**2)
 rmse = np.sqrt(mse)
 print('RMSE:', rmse)
+
+#决策树可视化
+# tree = estimator.estimators_[5]
+# export_graphviz(tree, out_file = 'tree.dot', feature_names = features_names, rounded = True, precision = 1)
+# (graph, ) = pydot.graph_from_dot_file('tree.dot')
+# graph.write_png('tree.png')
+
+#特征的重要性
+importances = estimator.feature_importances_
+features_imoportances = [(feature, round(importance, 2)) for feature, importance in zip(features_names, importances)]
+features_imoportances = sorted(features_imoportances, key = lambda x: x[1], reverse = True)
+for feature, importance in features_imoportances:
+    print(f'{feature}: {importance}')
+
+
+#简化模型，只使用最重要的两个特征来训练
+important_index= [features_names.index('temp_1'), features_names.index('average')]
+train_features = train_features[:, important_index]
+test_features = test_features[:, important_index]
+
+estimator.fit(train_features, train_labels)
+predictions = estimator.predict(test_features)
+mse = np.mean((predictions - test_labels)**2)
+rmse = np.sqrt(mse)
+print('RMSE:', rmse)
+
+#绘制特征重要性的条形图
+plt.bar(range(len(importances)), importances)
+plt.xticks(range(len(importances)), features_names, rotation = 90)
+plt.xlabel('Features')
+plt.ylabel('Importance')
+plt.tight_layout()
+plt.show()
